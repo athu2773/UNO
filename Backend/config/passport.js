@@ -30,7 +30,10 @@ module.exports = function (passport) {
             // Generate a username from email or name
             let username = "";
             if (email) {
-              username = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+              username = email
+                .split("@")[0]
+                .replace(/[^a-zA-Z0-9]/g, "")
+                .toLowerCase();
             }
             if ((!username || username.length < 3) && name) {
               username = name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
