@@ -8,6 +8,8 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const { setupGameSockets } = require("./sockets/gameSocket");
 const { setupChatSockets } = require("./sockets/chatSocket");
+const { setupNotificationSockets } = require("./sockets/notificationSocket");
+const { setupTournamentSockets } = require("./sockets/tournamentSocket");
 
 dotenv.config();
 connectDB();
@@ -29,10 +31,16 @@ app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/user", require("./routes/user.routes"));
 app.use("/api/game", require("./routes/game.routes"));
 app.use("/api/chat", require("./routes/chat.routes"));
+app.use("/api/stats", require("./routes/stats.routes"));
+app.use("/api/friends", require("./routes/friends.routes"));
+app.use("/api/tournaments", require("./routes/tournaments.routes"));
+app.use("/api/notifications", require("./routes/notifications.routes").router);
 
 // Socket.io event handlers
 setupGameSockets(io);
 setupChatSockets(io);
+setupTournamentSockets(io);
+setupNotificationSockets(io);
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {

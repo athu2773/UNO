@@ -27,13 +27,38 @@ module.exports = function (passport) {
           let user = await User.findOne({ googleId });
 
           if (!user) {
-            // Create new user
+            // Generate a username from email or name
+            let username = "";
+            if (email) {
+              username = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+            }
+            if ((!username || username.length < 3) && name) {
+              username = name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+            }
+            if (!username || username.length < 3) {
+              username = `user${googleId.substring(0, 8)}`;
+            }
+            // Pad username if still too short
+            if (username.length < 3) {
+              username = username.padEnd(3, "0");
+            }
+            username = username.substring(0, 20);
+
+            // Ensure username is unique
+            let uniqueUsername = username;
+            let counter = 1;
+            while (await User.findOne({ username: uniqueUsername })) {
+              uniqueUsername = `${username}${counter}`.substring(0, 20);
+              counter++;
+            }
+
             user = await User.create({
               googleId,
               name,
               email,
               emailVerified,
-              photo,
+              avatar: photo,
+              username: uniqueUsername,
             });
           } else {
             // Optional: update existing user profile info
