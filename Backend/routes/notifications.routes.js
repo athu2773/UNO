@@ -10,17 +10,9 @@ router.get("/", auth, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
-
-    res.json({
-      success: true,
-      notifications,
-    });
+    res.json(Array.isArray(notifications) ? notifications : []);
   } catch (error) {
-    console.error("Error fetching notifications:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch notifications",
-    });
+    res.status(500).json([]);
   }
 });
 

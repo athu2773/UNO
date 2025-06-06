@@ -12,7 +12,15 @@ const getProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ user });
+    // Flatten user object for test compatibility
+    res.json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+      friends: user.friends,
+      // add other fields as needed
+    });
   } catch (err) {
     console.error("Get profile error:", err);
     res.status(500).json({ message: "Server error fetching profile" });
@@ -26,7 +34,9 @@ const addFriend = async (req, res) => {
     const { friendId } = req.body;
 
     if (userId.equals(friendId)) {
-      return res.status(400).json({ message: "Cannot add yourself as a friend" });
+      return res
+        .status(400)
+        .json({ message: "Cannot add yourself as a friend" });
     }
 
     const user = await User.findById(userId);

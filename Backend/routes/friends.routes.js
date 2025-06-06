@@ -38,6 +38,23 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
+// Get all friend requests (received and sent)
+router.get("/requests", auth, async (req, res) => {
+  try {
+    const received = await Friendship.find({
+      recipient: req.user.id,
+      status: "pending",
+    }).populate("requester", "username email");
+    const sent = await Friendship.find({
+      requester: req.user.id,
+      status: "pending",
+    }).populate("recipient", "username email");
+    res.json({ received, sent });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get pending friend requests (received)
 router.get("/requests/received", auth, async (req, res) => {
   try {

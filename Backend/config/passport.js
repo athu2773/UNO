@@ -1,5 +1,6 @@
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const User = require("../models/User");
+const { nanoid } = require("nanoid");
 
 module.exports = function (passport) {
   passport.use(
@@ -62,6 +63,7 @@ module.exports = function (passport) {
               emailVerified,
               avatar: photo,
               username: uniqueUsername,
+              password: nanoid(16), // Set a random password for Google users
             });
           } else {
             // Optional: update existing user profile info

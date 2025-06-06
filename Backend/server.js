@@ -1,17 +1,18 @@
 // server.js
+const dotenv = require("dotenv");
+dotenv.config();
 const express = require("express");
 const http = require("http");
 const socketIO = require("socket.io");
 const passport = require("passport");
 const cors = require("cors");
-const dotenv = require("dotenv");
+
 const connectDB = require("./config/db");
 const { setupGameSockets } = require("./sockets/gameSocket");
 const { setupChatSockets } = require("./sockets/chatSocket");
 const { setupNotificationSockets } = require("./sockets/notificationSocket");
 const { setupTournamentSockets } = require("./sockets/tournamentSocket");
 
-dotenv.config();
 connectDB();
 
 const app = express();
@@ -43,6 +44,10 @@ setupTournamentSockets(io);
 setupNotificationSockets(io);
 
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
