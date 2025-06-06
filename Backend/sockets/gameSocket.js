@@ -7,25 +7,66 @@ const socketAuth = require("../middlewares/socketAuth.middleware");
 
 function setupGameSockets(io) {
   io.use(socketAuth);
-
   io.on("connection", (socket) => {
-    const userId = socket.user.id;
-    console.log(`User connected to game: ${userId}, socketId: ${socket.id}`);
-
-    // Join a room
+    const userId = socket.user._id;
+    console.log(`User connected to game: ${userId}, socketId: ${socket.id}`); // Join a room
     socket.on("joinRoom", async (roomCode, callback) => {
       try {
-        let room = await Room.findOne({ code: roomCode }).populate("players.user");
-        if (!room) return callback({ error: "Room not found" });
+        console.log(`User ${userId} attempting to join room ${roomCode}`);
+
+        let room = await Room.findOne({ code: roomCode }).populate(
+          "players.user"
+        );
+        if (!room) {
+          console.log(`Room ${roomCode} not found`);
+          return callback({ error: "Room not found" });
+        }
 
         if (room.players.length >= 4) {
+          console.log(`Room ${roomCode} is full`);
           return callback({ error: "Room full" });
+        } // Prevent duplicate join - check both by user ID and socket ID
+        console.log(
+          `Checking for existing player. Current players:`,
+          room.players.map((p) => ({
+            userId: p.user._id ? p.user._id.toString() : p.user.toString(),
+            socketId: p.socketId,
+          }))
+        );
+        console.log(`New user joining: ${userId}, socket: ${socket.id}`);
+
+        const existingPlayerByUserId = room.players.some((p) => {
+          const playerId = p.user._id
+            ? p.user._id.toString()
+            : p.user.toString();
+          return playerId === userId;
+        });
+
+        if (existingPlayerByUserId) {
+          console.log(
+            `User ${userId} already in room ${roomCode} - updating socket ID`
+          );
+          // Update socket ID if user rejoined with new socket
+          const playerIndex = room.players.findIndex((p) => {
+            const playerId = p.user._id
+              ? p.user._id.toString()
+              : p.user.toString();
+            return playerId === userId;
+          });
+          if (playerIndex !== -1) {
+            room.players[playerIndex].socketId = socket.id;
+            await room.save();
+          }
+
+          socket.join(roomCode);
+          room = await Room.findOne({ code: roomCode }).populate(
+            "players.user host"
+          );
+          const formattedRoom = formatRoomForClient(room);
+          return callback({ success: true, room: formattedRoom });
         }
 
-        // Prevent duplicate join
-        if (room.players.some((p) => p.user._id.toString() === userId)) {
-          return callback({ error: "Already in room" });
-        }
+        console.log(`Adding user ${userId} to room ${roomCode}`);
 
         // Add player
         room.players.push({
@@ -38,9 +79,18 @@ function setupGameSockets(io) {
         await room.save();
         socket.join(roomCode);
 
-        io.to(roomCode).emit("roomUpdate", room);
+        // Repopulate to get the new player's user data
+        room = await Room.findOne({ code: roomCode }).populate(
+          "players.user host"
+        );
 
-        callback({ success: true, room });
+        const formattedRoom = formatRoomForClient(room);
+        io.to(roomCode).emit("roomUpdate", formattedRoom);
+
+        console.log(
+          `User ${userId} successfully joined room ${roomCode}. Room now has ${room.players.length} players`
+        );
+        callback({ success: true, room: formattedRoom });
       } catch (err) {
         console.error("Join room error:", err);
         callback({ error: "Server error" });
@@ -59,7 +109,9 @@ function setupGameSockets(io) {
         const newRoom = new Room({
           code,
           host: userId,
-          players: [{ user: userId, socketId: socket.id, hand: [], saidUno: false }],
+          players: [
+            { user: userId, socketId: socket.id, hand: [], saidUno: false },
+          ],
           deck: [],
           discardPile: [],
           currentTurn: 0,
@@ -68,11 +120,16 @@ function setupGameSockets(io) {
           currentColor: null,
           status: "waiting",
         });
-
         await newRoom.save();
         socket.join(code);
 
-        callback({ success: true, room: newRoom });
+        // Populate the user data before sending to client
+        const populatedRoom = await Room.findOne({ code }).populate(
+          "players.user host"
+        );
+        const formattedRoom = formatRoomForClient(populatedRoom);
+
+        callback({ success: true, room: formattedRoom });
       } catch (err) {
         console.error("Create room error:", err);
         callback({ error: "Server error" });
@@ -128,108 +185,125 @@ function setupGameSockets(io) {
     });
 
     // Play card
-    socket.on("playCard", async ({ roomCode, cardIndex, declaredColor }, callback) => {
-      try {
-        let room = await Room.findOne({ code: roomCode });
-        if (!room) return callback({ error: "Room not found" });
-        if (room.status !== "active") return callback({ error: "Game not active" });
+    socket.on(
+      "playCard",
+      async ({ roomCode, cardIndex, declaredColor }, callback) => {
+        try {
+          let room = await Room.findOne({ code: roomCode });
+          if (!room) return callback({ error: "Room not found" });
+          if (room.status !== "active")
+            return callback({ error: "Game not active" });
 
-        const playerIndex = room.players.findIndex((p) => p.user.toString() === userId);
-        if (playerIndex === -1) return callback({ error: "Player not in room" });
+          const playerIndex = room.players.findIndex(
+            (p) => p.user.toString() === userId
+          );
+          if (playerIndex === -1)
+            return callback({ error: "Player not in room" });
 
-        if (room.currentTurn !== playerIndex) {
-          return callback({ error: "Not your turn" });
-        }
-
-        const player = room.players[playerIndex];
-        const card = player.hand[cardIndex];
-        if (!card) return callback({ error: "Invalid card index" });
-
-        const topCard = room.discardPile[room.discardPile.length - 1];
-
-        // Check if card playable
-        if (!isPlayable(card, topCard, room.currentColor)) {
-          return callback({ error: "Card not playable" });
-        }
-
-        // Remove card from hand and add to discard pile
-        player.hand.splice(cardIndex, 1);
-        room.discardPile.push(card);
-
-        // Reset drawStack if not draw card
-        if (card.value !== "+2" && card.value !== "+4") {
-          room.drawStack = 0;
-        }
-
-        // Update current color (wild cards allow color change)
-        if (card.color === "black") {
-          if (!declaredColor || !["red", "green", "blue", "yellow"].includes(declaredColor)) {
-            return callback({ error: "You must declare a valid color for wild card" });
+          if (room.currentTurn !== playerIndex) {
+            return callback({ error: "Not your turn" });
           }
-          room.currentColor = declaredColor;
-        } else {
-          room.currentColor = card.color;
-        }
 
-        // Handle special cards
-        if (card.value === "skip") {
-          // Skip next player
-          room.currentTurn = getNextTurn(room, 2);
-        } else if (card.value === "reverse") {
-          // Reverse direction
-          room.direction = room.direction === "clockwise" ? "counter" : "clockwise";
-          if (room.players.length === 2) {
-            // Reverse acts as skip in 2 player
+          const player = room.players[playerIndex];
+          const card = player.hand[cardIndex];
+          if (!card) return callback({ error: "Invalid card index" });
+
+          const topCard = room.discardPile[room.discardPile.length - 1];
+
+          // Check if card playable
+          if (!isPlayable(card, topCard, room.currentColor)) {
+            return callback({ error: "Card not playable" });
+          }
+
+          // Remove card from hand and add to discard pile
+          player.hand.splice(cardIndex, 1);
+          room.discardPile.push(card);
+
+          // Reset drawStack if not draw card
+          if (card.value !== "+2" && card.value !== "+4") {
+            room.drawStack = 0;
+          }
+
+          // Update current color (wild cards allow color change)
+          if (card.color === "black") {
+            if (
+              !declaredColor ||
+              !["red", "green", "blue", "yellow"].includes(declaredColor)
+            ) {
+              return callback({
+                error: "You must declare a valid color for wild card",
+              });
+            }
+            room.currentColor = declaredColor;
+          } else {
+            room.currentColor = card.color;
+          }
+
+          // Handle special cards
+          if (card.value === "skip") {
+            // Skip next player
             room.currentTurn = getNextTurn(room, 2);
+          } else if (card.value === "reverse") {
+            // Reverse direction
+            room.direction =
+              room.direction === "clockwise" ? "counter" : "clockwise";
+            if (room.players.length === 2) {
+              // Reverse acts as skip in 2 player
+              room.currentTurn = getNextTurn(room, 2);
+            } else {
+              room.currentTurn = getNextTurn(room, 1);
+            }
+          } else if (card.value === "+2") {
+            room.drawStack += 2;
+            room.currentTurn = getNextTurn(room, 1);
+          } else if (card.value === "+4") {
+            room.drawStack += 4;
+            room.currentTurn = getNextTurn(room, 1);
           } else {
             room.currentTurn = getNextTurn(room, 1);
           }
-        } else if (card.value === "+2") {
-          room.drawStack += 2;
-          room.currentTurn = getNextTurn(room, 1);
-        } else if (card.value === "+4") {
-          room.drawStack += 4;
-          room.currentTurn = getNextTurn(room, 1);
-        } else {
-          room.currentTurn = getNextTurn(room, 1);
-        }
 
-        // Reset saidUno if player has >1 card, else flag false
-        player.saidUno = player.hand.length === 1 ? player.saidUno : false;
+          // Reset saidUno if player has >1 card, else flag false
+          player.saidUno = player.hand.length === 1 ? player.saidUno : false;
 
-        // Check win condition
-        if (player.hand.length === 0) {
-          room.status = "finished";
-          room.winner = player.user;
-          await updateUserHistory(player.user, room._id, "win");
+          // Check win condition
+          if (player.hand.length === 0) {
+            room.status = "finished";
+            room.winner = player.user;
+            await updateUserHistory(player.user, room._id, "win");
 
-          // Mark others as loss
-          for (const p of room.players) {
-            if (p.user.toString() !== player.user.toString()) {
-              await updateUserHistory(p.user, room._id, "loss");
+            // Mark others as loss
+            for (const p of room.players) {
+              if (p.user.toString() !== player.user.toString()) {
+                await updateUserHistory(p.user, room._id, "loss");
+              }
             }
           }
+
+          await room.save();
+
+          io.to(roomCode).emit("gameUpdate", room);
+          callback({ success: true });
+        } catch (err) {
+          console.error("Play card error:", err);
+          callback({ error: "Server error" });
         }
-
-        await room.save();
-
-        io.to(roomCode).emit("gameUpdate", room);
-        callback({ success: true });
-      } catch (err) {
-        console.error("Play card error:", err);
-        callback({ error: "Server error" });
       }
-    });
+    );
 
     // Draw card
     socket.on("drawCard", async (roomCode, callback) => {
       try {
         let room = await Room.findOne({ code: roomCode });
         if (!room) return callback({ error: "Room not found" });
-        if (room.status !== "active") return callback({ error: "Game not active" });
+        if (room.status !== "active")
+          return callback({ error: "Game not active" });
 
-        const playerIndex = room.players.findIndex((p) => p.user.toString() === userId);
-        if (playerIndex === -1) return callback({ error: "Player not in room" });
+        const playerIndex = room.players.findIndex(
+          (p) => p.user.toString() === userId
+        );
+        if (playerIndex === -1)
+          return callback({ error: "Player not in room" });
 
         if (room.currentTurn !== playerIndex) {
           return callback({ error: "Not your turn" });
@@ -288,7 +362,9 @@ function setupGameSockets(io) {
         if (!player) return callback({ error: "Player not in room" });
 
         if (player.hand.length !== 1) {
-          return callback({ error: "You can only say UNO when you have exactly 1 card" });
+          return callback({
+            error: "You can only say UNO when you have exactly 1 card",
+          });
         }
 
         player.saidUno = true;
@@ -326,9 +402,15 @@ function setupGameSockets(io) {
 
           await room.save();
           io.to(roomCode).emit("gameUpdate", room);
-          callback({ success: true, message: "Penalty applied for not saying UNO" });
+          callback({
+            success: true,
+            message: "Penalty applied for not saying UNO",
+          });
         } else {
-          callback({ error: "Cannot object: Player either said UNO or does not have exactly 1 card" });
+          callback({
+            error:
+              "Cannot object: Player either said UNO or does not have exactly 1 card",
+          });
         }
       } catch (err) {
         console.error("Object UNO error:", err);
@@ -393,5 +475,27 @@ async function updateUserHistory(userId, gameId, result) {
     },
   });
 }
+
+const formatRoomForClient = (room) => {
+  return {
+    id: room._id,
+    code: room.code,
+    host: room.host,
+    currentTurn: room.currentTurn,
+    gameStarted: room.status === "active",
+    discardPile: room.discardPile,
+    currentColor: room.currentColor,
+    direction: room.direction === "clockwise" ? 1 : -1,
+    gameEnded: room.status === "finished",
+    winner: room.winner,
+    players: room.players.map((player) => ({
+      id: player.user._id.toString(),
+      name: player.user.name,
+      picture: player.user.picture,
+      cards: Array.isArray(player.hand) ? player.hand.length : player.hand,
+      saidUno: player.saidUno,
+    })),
+  };
+};
 
 module.exports = { setupGameSockets };

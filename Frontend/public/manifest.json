@@ -1,0 +1,16 @@
+{
+  "name": "UNO Game",
+  "short_name": "UNO",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#000000",
+  "description": "UNO Card Game - Play with friends online",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#000000"
+}
