@@ -28,11 +28,9 @@ router.get(
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "7d",
-    });
-
-    // Redirect to frontend dashboard with token (or send JSON if API)
+    }); // Redirect to frontend dashboard with token (or send JSON if API)
     // Example: redirect with token in query or fragment
-    res.redirect(`${process.env.CLIENT_URL}/dashboard?token=${token}`);
+    res.redirect(`${process.env.CLIENT_URL}/?token=${token}`);
   }
 );
 

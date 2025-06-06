@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* UNO specific styles */
+.uno-card {
+  @apply relative w-16 h-24 rounded-lg border-2 shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer;
+}
+
+.uno-card-red {
+  @apply bg-red-500 border-red-600 text-white;
+}
+
+.uno-card-green {
+  @apply bg-green-500 border-green-600 text-white;
+}
+
+.uno-card-blue {
+  @apply bg-blue-500 border-blue-600 text-white;
+}
+
+.uno-card-yellow {
+  @apply bg-yellow-500 border-yellow-600 text-white;
+}
+
+.uno-card-black {
+  @apply bg-gray-800 border-gray-900 text-white;
+}
+
+.uno-card-playable {
+  @apply ring-2 ring-green-400 ring-opacity-75;
+}
+
+.uno-card-selected {
+  @apply ring-2 ring-blue-400 ring-opacity-75 transform -translate-y-2;
+}
+
+.uno-hand {
+  @apply flex gap-2 overflow-x-auto pb-4;
+}
+
+.game-table {
+  @apply bg-gradient-to-br from-green-700 to-green-900 rounded-2xl p-8 min-h-96;
+}
+
+.player-zone {
+  @apply absolute flex flex-col items-center;
+}
+
+.current-turn {
+  @apply ring-4 ring-yellow-400 ring-opacity-75 rounded-lg;
+}
+
+/* Animation classes */
+.fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.slide-in-bottom {
+  animation: slide-in 0.3s ease-out;
+}
+
+.card-flip {
+  animation: card-flip 0.6s ease-in-out;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .uno-card {
+    @apply w-12 h-[4.5rem];
+  }
+  
+  .game-table {
+    @apply p-4;
+  }
+}
