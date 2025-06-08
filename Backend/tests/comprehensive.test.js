@@ -77,7 +77,7 @@ describe("UNO App - Comprehensive Backend Tests", () => {
     });
 
     it("should list user's rooms", async () => {
-      console.log('[TEST DEBUG] userToken before /api/game/rooms:', userToken);
+      console.log("[TEST DEBUG] userToken before /api/game/rooms:", userToken);
       const res = await request(app)
         .get("/api/game/rooms")
         .set("Authorization", `Bearer ${userToken}`);
