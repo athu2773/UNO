@@ -1,4 +1,3 @@
-// File: middlewares/auth.middleware.js
 const jwt = require("jsonwebtoken");
 
 exports.isAuthenticated = (req, res, next) => {
@@ -33,7 +32,7 @@ exports.isRoomAuthenticated = (req, res, next) => {
       return res.status(401).json({ message: "Authorization token missing" });
     }
     const token = authHeader.split(" ")[1];
-    
+
     const decoded = jwt.verify(token, process.env.ROOM_JWT_SECRET);
     req.room = {
       roomId: decoded.roomId,
