@@ -1,8 +1,11 @@
-// File: controllers/game.controller.js
+console.log("[game.controller.js] File loaded");
 const Room = require("../models/Room");
+console.log("[game.controller.js] Room model imported");
 const User = require("../models/User");
 const { generateDeck, shuffle } = require("../utils/unoLogic");
-const { nanoid } = require("nanoid");
+const { nanoid } = require("nanoid/non-secure");
+const mongoose = require("mongoose");
+const { generateRoomToken } = require("./auth.controller");
 
 const MAX_PLAYERS = 4;
 const HAND_SIZE = 7;
@@ -36,8 +39,17 @@ const createRoom = async (req, res) => {
     });
 
     await room.save();
-
-    res.status(201).json({ room });
+    // Generate a room-specific JWT
+    const roomToken = generateRoomToken(room);
+    // Return all fields at the top level for test compatibility
+    const roomObj = room.toObject();
+    res.status(201).json({
+      ...roomObj,
+      code: room.code,
+      _id: room._id,
+      host: room.host,
+      roomToken,
+    });
   } catch (err) {
     console.error("Create room error:", err);
     res.status(500).json({ message: "Server error creating room" });
@@ -61,7 +73,9 @@ const joinRoom = async (req, res) => {
     }
 
     if (room.status !== "waiting") {
-      return res.status(400).json({ message: "Game already started or finished" });
+      return res
+        .status(400)
+        .json({ message: "Game already started or finished" });
     }
 
     if (room.players.length >= MAX_PLAYERS) {
@@ -76,7 +90,9 @@ const joinRoom = async (req, res) => {
 
     // Deal 7 cards to the joining player
     if (room.deck.length < HAND_SIZE) {
-      return res.status(400).json({ message: "Not enough cards in deck to join" });
+      return res
+        .status(400)
+        .json({ message: "Not enough cards in deck to join" });
     }
 
     const hand = room.deck.splice(0, HAND_SIZE);
@@ -104,8 +120,65 @@ const listRooms = async (req, res) => {
   }
 };
 
+// Get room details by ID
+const getRoomDetails = async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.id);
+    if (!room) return res.status(404).json({ message: "Room not found" });
+    // Return all fields at the top level for test compatibility
+    const roomObj = room.toObject();
+    res
+      .status(200)
+      .json({ ...roomObj, code: room.code, _id: room._id, host: room.host });
+  } catch (err) {
+    res.status(500).json({ message: "Server error fetching room details" });
+  }
+};
+
+// List rooms for the current user
+const listUserRooms = async (req, res) => {
+  try {
+    console.log("listUserRooms: called");
+    console.log("listUserRooms: req.user=", req.user);
+    console.log("listUserRooms: req.headers=", req.headers);
+    if (!req.user || !req.user._id) {
+      console.error(
+        "listUserRooms: req.user or req.user._id is missing",
+        req.user
+      );
+      return res.status(400).json({ message: "User not authenticated" });
+    }
+    let userObjectId;
+    try {
+      console.log("listUserRooms: raw req.user._id=", req.user._id);
+      console.log("listUserRooms: type of req.user._id=", typeof req.user._id);
+
+      userObjectId = new mongoose.Types.ObjectId(req.user._id);
+    } catch (e) {
+      console.error("Invalid user ObjectId:", req.user._id, e);
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    console.log("listUserRooms: userId=", userObjectId);
+
+    // Find rooms where the host matches the user ID
+    const rooms = await Room.find({ host: userObjectId });
+    console.log("listUserRooms: rooms=", rooms);
+    // Return array at the top level for test compatibility
+    res.json(Array.isArray(rooms) ? rooms : []);
+  } catch (err) {
+    console.error("List user rooms error:", err);
+    res.status(500).json({
+      message: "Server error listing user rooms",
+      error: err.message,
+      stack: err.stack,
+    });
+  }
+};
+
 module.exports = {
   createRoom,
   joinRoom,
   listRooms,
+  getRoomDetails,
+  listUserRooms,
 };

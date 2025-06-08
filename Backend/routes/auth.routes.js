@@ -2,6 +2,7 @@
 const express = require("express");
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
+const authController = require("../controllers/auth.controller");
 
 const router = express.Router();
 
@@ -33,6 +34,11 @@ router.get(
     res.redirect(`${process.env.CLIENT_URL}/?token=${token}`);
   }
 );
+
+// Register route
+router.post("/register", authController.register);
+// Login route
+router.post("/login", authController.login);
 
 // Route to verify token and get current user info
 router.get("/me", (req, res) => {
