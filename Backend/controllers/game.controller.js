@@ -43,9 +43,13 @@ const createRoom = async (req, res) => {
     const roomToken = generateRoomToken(room);
     // Return all fields at the top level for test compatibility
     const roomObj = room.toObject();
-    res
-      .status(201)
-      .json({ ...roomObj, code: room.code, _id: room._id, host: room.host, roomToken });
+    res.status(201).json({
+      ...roomObj,
+      code: room.code,
+      _id: room._id,
+      host: room.host,
+      roomToken,
+    });
   } catch (err) {
     console.error("Create room error:", err);
     res.status(500).json({ message: "Server error creating room" });
@@ -146,25 +150,28 @@ const listUserRooms = async (req, res) => {
     }
     let userObjectId;
     try {
-      userObjectId = mongoose.Types.ObjectId(req.user._id);
+      console.log("listUserRooms: raw req.user._id=", req.user._id);
+      console.log("listUserRooms: type of req.user._id=", typeof req.user._id);
+
+      userObjectId = new mongoose.Types.ObjectId(req.user._id);
     } catch (e) {
       console.error("Invalid user ObjectId:", req.user._id, e);
       return res.status(400).json({ message: "Invalid user ID" });
     }
     console.log("listUserRooms: userId=", userObjectId);
+
+    // Find rooms where the host matches the user ID
     const rooms = await Room.find({ host: userObjectId });
     console.log("listUserRooms: rooms=", rooms);
     // Return array at the top level for test compatibility
     res.json(Array.isArray(rooms) ? rooms : []);
   } catch (err) {
     console.error("List user rooms error:", err);
-    res
-      .status(500)
-      .json({
-        message: "Server error listing user rooms",
-        error: err.message,
-        stack: err.stack,
-      });
+    res.status(500).json({
+      message: "Server error listing user rooms",
+      error: err.message,
+      stack: err.stack,
+    });
   }
 };
 
