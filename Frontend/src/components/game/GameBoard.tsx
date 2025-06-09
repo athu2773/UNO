@@ -11,6 +11,7 @@ interface Player {
   picture?: string;
   cards: GameCard[] | number; // <-- Make sure this matches GameRoom.tsx
   saidUno?: boolean;
+  isBot?: boolean;
 }
 
 interface GameCard {
@@ -129,8 +130,12 @@ const GameBoard: React.FC<GameBoardProps> = ({
                       <AvatarFallback>
                         {player.name?.charAt(0)?.toUpperCase() || '?'}
                       </AvatarFallback>
-                    </Avatar>
-                    <span className="flex-1">{player.name || 'Unknown Player'}</span>
+                    </Avatar>                    <span className="flex-1">{player.name || 'Unknown Player'}</span>
+                    {player.isBot && (
+                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                        Bot
+                      </span>
+                    )}
                     {player.id === room.host && (
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                         Host
@@ -266,10 +271,14 @@ const GameBoard: React.FC<GameBoardProps> = ({
                     <AvatarImage src={player.picture} />                    <AvatarFallback className="text-xs">
                       {player.name?.charAt(0)?.toUpperCase() || '?'}
                     </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
+                  </Avatar>                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
                       {player.name || 'Unknown Player'}
+                      {player.isBot && (
+                        <span className="ml-1 text-xs bg-purple-100 text-purple-800 px-1 py-0.5 rounded">
+                          Bot
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-gray-500">
                       {Array.isArray(player.cards) ? player.cards.length : player.cards} cards
