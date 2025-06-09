@@ -462,9 +462,20 @@ function setupGameSockets(io) {  io.use(socketAuth);
         // Populate players before checking
         room = await populateRoomPlayers(room);
 
-        // Check if user is host
-        if (room.host.toString() !== userId) {
-          console.log(`User ${userId} is not host (host is ${room.host})`);
+        // Check if user is host - handle both ObjectId and populated user object
+        let hostId;
+        if (room.host && typeof room.host === 'object' && room.host._id) {
+          // Host is a populated user object
+          hostId = room.host._id.toString();
+        } else if (room.host) {
+          // Host is ObjectId or string
+          hostId = room.host.toString();
+        }
+        
+        console.log(`Host validation: userId=${userId}, hostId=${hostId}, match=${hostId === userId}`);
+        
+        if (hostId !== userId) {
+          console.log(`User ${userId} is not host (host is ${hostId})`);
           return callback({ error: "Only host can add bots" });
         }
 
@@ -497,7 +508,7 @@ function setupGameSockets(io) {  io.use(socketAuth);
         console.error("Add bot error:", err);
         callback({ error: err.message || "Server error" });
       }
-    });// Remove bot from room
+    });    // Remove bot from room
     socket.on("removeBot", async ({ roomCode, botId }, callback) => {
       try {
         console.log(`User ${userId} removing bot ${botId} from room ${roomCode}`);
@@ -508,8 +519,17 @@ function setupGameSockets(io) {  io.use(socketAuth);
         // Populate players before checking
         room = await populateRoomPlayers(room);
 
-        // Check if user is host
-        if (room.host.toString() !== userId) {
+        // Check if user is host - handle both ObjectId and populated user object
+        let hostId;
+        if (room.host && typeof room.host === 'object' && room.host._id) {
+          // Host is a populated user object
+          hostId = room.host._id.toString();
+        } else if (room.host) {
+          // Host is ObjectId or string
+          hostId = room.host.toString();
+        }
+        
+        if (hostId !== userId) {
           return callback({ error: "Only host can remove bots" });
         }
 
