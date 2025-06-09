@@ -103,6 +103,18 @@ const GameRoom: React.FC = () => {
       isHost: user?.id === updatedRoom.host,
       gameStarted: updatedRoom.gameStarted
     });
+    
+    // Debug Room Management visibility conditions
+    console.log('🔍 Room Management Visibility Check:', {
+      gameStarted: updatedRoom.gameStarted,
+      userId: user?.id,
+      roomHost: updatedRoom.host,
+      userIdType: typeof user?.id,
+      roomHostType: typeof updatedRoom.host,
+      isEqual: user?.id === updatedRoom.host,
+      shouldShowRoomManagement: !updatedRoom.gameStarted && user?.id === updatedRoom.host
+    });
+    
     setRoom(updatedRoom);
   };
 
@@ -372,20 +384,26 @@ const GameRoom: React.FC = () => {
                 </div>
               </CardContent>
             </Card>          </div>
-        </div>        {/* Bot Management and Team Invitations */}
-        {(() => {
-          const shouldShow = !room.gameStarted && user?.id === room.host;
-          console.log('🔍 Room Management Debug:', {
-            gameStarted: room.gameStarted,
-            userId: user?.id,
-            roomHost: room.host,
-            userIdType: typeof user?.id,
-            roomHostType: typeof room.host,
-            isEqual: user?.id === room.host,
-            shouldShow
-          });
-          return shouldShow;
-        })() && (
+        </div>        {/* Debug Information */}
+        <div className="mb-4 p-4 bg-gray-100 rounded-lg text-sm">
+          <h4 className="font-semibold mb-2">Debug Info:</h4>
+          <p>Game Started: {room.gameStarted ? 'Yes' : 'No'}</p>
+          <p>User ID: {user?.id} (type: {typeof user?.id})</p>
+          <p>Room Host: {room.host} (type: {typeof room.host})</p>
+          <p>Is Host: {user?.id === room.host ? 'Yes' : 'No'}</p>
+          <p>Should Show Room Management: {(!room.gameStarted && user?.id === room.host) ? 'Yes' : 'No'}</p>
+        </div>        {/* Debug Info - Temporary */}
+        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
+          <h3 className="font-bold">Debug Info:</h3>
+          <p>Game Started: {room.gameStarted ? 'Yes' : 'No'}</p>
+          <p>User ID: {user?.id} (type: {typeof user?.id})</p>
+          <p>Room Host: {typeof room.host === 'string' ? room.host : JSON.stringify(room.host)} (type: {typeof room.host})</p>
+          <p>Is Host: {user?.id === room.host ? 'Yes' : 'No'}</p>
+          <p>Should Show Room Management: {(!room.gameStarted && user?.id === room.host) ? 'Yes' : 'No'}</p>
+        </div>
+
+        {/* Bot Management and Team Invitations */}
+        {!room.gameStarted && user?.id === room.host && (
           <div className="mb-6">
             <Card>
               <CardHeader>

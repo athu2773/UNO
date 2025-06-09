@@ -799,10 +799,22 @@ async function updateUserHistory(userId, gameId, result) {
 }
 
 const formatRoomForClient = (room) => {
+  // Handle host field - could be ObjectId, string, or populated user object
+  let hostId;
+  if (room.host && typeof room.host === 'object' && room.host._id) {
+    // Host is a populated user object
+    hostId = room.host._id.toString();
+  } else if (room.host) {
+    // Host is ObjectId or string
+    hostId = room.host.toString();
+  } else {
+    hostId = null;
+  }
+  
   return {
     id: room._id,
     code: room.code,
-    host: room.host.toString(), // Convert ObjectId to string
+    host: hostId,
     currentTurn: room.currentTurn,
     gameStarted: room.status === "active",
     discardPile: room.discardPile,
