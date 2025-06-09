@@ -7,8 +7,9 @@ import { cn } from "../../lib/utils";
 
 interface Card {
   id: string;
-  color: string;
-  value: string;
+  color: 'red' | 'blue' | 'green' | 'yellow' | 'black';
+  value: string | number;
+  type: 'number' | 'action' | 'wild';
 }
 
 interface PlayerHandProps {

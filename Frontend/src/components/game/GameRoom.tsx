@@ -12,8 +12,9 @@ import { ArrowLeft } from "lucide-react";
 
 interface GameCard {
   id: string;
-  color: string;
-  value: string;
+  color: 'red' | 'blue' | 'green' | 'yellow' | 'black';
+  value: string | number;
+  type: 'number' | 'action' | 'wild';
 }
 
 interface Player {
@@ -111,7 +112,7 @@ const GameRoom: React.FC = () => {
     setRoom(gameRoom);
   };
 
-  const handlePlayerSaidUno = ({ userId, username }: { userId: string; username: string }) => {
+  const handlePlayerSaidUno = ({ username }: { username: string }) => {
     toast({
       title: "UNO!",
       description: `${username} said UNO!`,
@@ -131,7 +132,7 @@ const GameRoom: React.FC = () => {
     });
   };
 
-  const handlePlayerLeft = ({ userId, username }: { userId: string; username: string }) => {
+  const handlePlayerLeft = ({ username }: { username: string }) => {
     toast({
       title: "Player Left",
       description: `${username} left the game`,
@@ -265,38 +266,54 @@ const GameRoom: React.FC = () => {
           {/* Game board area */}
           <div className="lg:col-span-3">
             <GameBoard
-              room={room}
+              room={{
+                ...room,
+                players: room.players.map(p => ({
+                  ...p,
+                  cards: Array.isArray(p.cards) ? p.cards.length : p.cards
+                }))
+              }}
               currentUser={user!}
               onStartGame={handleStartGame}
               onObjectUno={handleObjectUno}
             />
-            
-            {/* Player hand */}
-            {room.gameStarted && !room.gameEnded && (
-              <div className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-center">Your Hand</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <PlayerHand
-                      cards={getCurrentPlayerHand()}
-                      currentCard={getCurrentCard()}
-                      currentColor={room.currentColor}
-                      isMyTurn={isMyTurn()}
-                      roomCode={roomCode!}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            )}
           </div>
 
+          {/* Player hand area */}
+          { !room.gameEnded && (
+            <div className="lg:col-span-1">
+              {room.gameStarted && (
+                <div className="mb-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-center">Your Hand</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <PlayerHand
+                        cards={getCurrentPlayerHand().map(card => ({
+                          ...card,
+                          value: String(card.value),
+                        }))}
+                        currentCard={
+                          getCurrentCard()
+                            ? { ...getCurrentCard()!, value: String(getCurrentCard()!.value) }
+                            : null
+                        }
+                        isMyTurn={isMyTurn()}
+                        currentColor={room.currentColor}
+                        roomCode={roomCode!}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          )}
           {/* Chat sidebar */}
           <div className="lg:col-span-1">
             <ChatBox
-              roomCode={roomCode!}
               messages={chatMessages}
+              roomCode={roomCode!}
               currentUser={user!}
             />
           </div>

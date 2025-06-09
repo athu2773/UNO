@@ -210,7 +210,7 @@ const Dashboard: React.FC = () => {
             <h1 className="text-5xl font-bold text-white mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               UNO Dashboard
             </h1>
-            <p className="text-xl text-gray-300">Welcome back, {user?.name || user?.username}!</p>
+            <p className="text-xl text-gray-300">Welcome back, {user?.name}!</p>
           </div>
           <div className="flex items-center space-x-4">
             <Button
@@ -229,7 +229,7 @@ const Dashboard: React.FC = () => {
             <Avatar className="w-10 h-10">
               <AvatarImage src={user?.picture} />
               <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                {(user?.name || user?.username)?.charAt(0).toUpperCase()}
+                {user?.name?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <Button variant="outline" onClick={handleLogout} className="border-gray-600 text-gray-300 hover:bg-gray-700">

@@ -9,7 +9,7 @@ interface Player {
   id: string;
   name: string;
   picture?: string;
-  cards: number;
+  cards: GameCard[] | number; // <-- Make sure this matches GameRoom.tsx
   saidUno?: boolean;
 }
 
@@ -272,22 +272,22 @@ const GameBoard: React.FC<GameBoardProps> = ({
                       {player.name || 'Unknown Player'}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {player.cards} cards
+                      {Array.isArray(player.cards) ? player.cards.length : player.cards} cards
                     </p>
                   </div>
                 </div>
 
                 {/* Player's cards representation */}
                 <div className={cn("flex gap-1", getCardFanClass(position))}>
-                  {Array.from({ length: Math.min(player.cards, 5) }).map((_, cardIndex) => (
+                  {Array.from({ length: Math.min(Array.isArray(player.cards) ? player.cards.length : player.cards, 5) }).map((_, cardIndex) => (
                     <div
                       key={cardIndex}
                       className="w-3 h-5 bg-blue-900 rounded-sm border border-blue-800"
                     />
                   ))}
-                  {player.cards > 5 && (
+                  {(Array.isArray(player.cards) ? player.cards.length : player.cards) > 5 && (
                     <span className="text-xs text-gray-600 ml-1">
-                      +{player.cards - 5}
+                      +{(Array.isArray(player.cards) ? player.cards.length : player.cards) - 5}
                     </span>
                   )}
                 </div>
