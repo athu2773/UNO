@@ -1,27 +1,30 @@
 // Browser console test script for bot functionality
 // Copy and paste this into the browser console when you're in a game room
 
-console.log('Testing bot functionality...');
+console.log("Testing bot functionality...");
 
 // Check if socket is available
 if (window.socket) {
-  console.log('Socket found:', window.socket.connected);
-  
+  console.log("Socket found:", window.socket.connected);
+
   // Try to add a bot
-  window.socket.emit('addBot', 'YOUR_ROOM_CODE', (response) => {
-    console.log('Add bot response:', response);
+  window.socket.emit("addBot", "YOUR_ROOM_CODE", (response) => {
+    console.log("Add bot response:", response);
   });
 } else {
-  console.log('No socket found on window object');
-  
+  console.log("No socket found on window object");
+
   // Try to find socket in React DevTools context
   // This might work if React DevTools is available
   try {
-    const reactRoot = document.querySelector('#root')._reactInternalFiber || 
-                     document.querySelector('#root')._reactInternals;
-    console.log('React root found, you may need to access socket through component context');
+    const reactRoot =
+      document.querySelector("#root")._reactInternalFiber ||
+      document.querySelector("#root")._reactInternals;
+    console.log(
+      "React root found, you may need to access socket through component context"
+    );
   } catch (e) {
-    console.log('Could not access React internals');
+    console.log("Could not access React internals");
   }
 }
 

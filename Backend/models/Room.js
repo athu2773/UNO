@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
 
 const playerSchema = new mongoose.Schema({
-  user: { 
+  user: {
     type: mongoose.Schema.Types.Mixed, // Allow both ObjectId and bot objects
-    ref: "User" 
+    ref: "User",
   },
   socketId: String,
   hand: Array, // Cards in hand
@@ -22,7 +22,11 @@ const roomSchema = new mongoose.Schema(
     direction: { type: String, enum: ["clockwise", "counter"] },
     drawStack: { type: Number, default: 0 },
     currentColor: String,
-    status: { type: String, enum: ["waiting", "active", "finished"], default: "waiting" },
+    status: {
+      type: String,
+      enum: ["waiting", "active", "finished"],
+      default: "waiting",
+    },
     winner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     allowBots: { type: Boolean, default: true },
     maxPlayers: { type: Number, default: 4 },
