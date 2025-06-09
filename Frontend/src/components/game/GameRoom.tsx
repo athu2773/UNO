@@ -23,6 +23,7 @@ interface Player {
   picture?: string;
   cards: GameCard[] | number;
   saidUno?: boolean;
+  isBot?: boolean;
 }
 
 interface Room {
@@ -37,6 +38,8 @@ interface Room {
   direction: number;
   gameEnded?: boolean;
   winner?: string;
+  allowBots?: boolean;
+  maxPlayers?: number;
 }
 
 interface Message {
@@ -53,7 +56,6 @@ const GameRoom: React.FC = () => {
   const navigate = useNavigate();
   const { socket } = useSocket();
   const { user } = useAuth();
-
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
@@ -61,7 +63,8 @@ const GameRoom: React.FC = () => {
   useEffect(() => {
     if (!socket || !user || !roomCode) return;
 
-    // Join the room
+    // Always call joinRoom, but the backend should handle duplicates properly
+    console.log("Joining room:", roomCode);
     socket.emit("joinRoom", roomCode, (response: any) => {
       if (response.error) {
         toast({
@@ -74,9 +77,7 @@ const GameRoom: React.FC = () => {
         setRoom(response.room);
         setLoading(false);
       }
-    });
-
-    // Socket event listeners
+    });    // Socket event listeners
     socket.on("roomUpdate", handleRoomUpdate);
     socket.on("gameStarted", handleGameStarted);    socket.on("gameUpdate", handleGameUpdate);
     socket.on("playerSaidUno", handlePlayerSaidUno);
@@ -84,8 +85,7 @@ const GameRoom: React.FC = () => {
     socket.on("gameEnded", handleGameEnded);
     socket.on("playerLeft", handlePlayerLeft);
     socket.on("error", handleError);
-
-    return () => {
+    socket.on("teamInvitationReceived", handleTeamInvitationReceived);    return () => {
       socket.off("roomUpdate");
       socket.off("gameStarted");      socket.off("gameUpdate");
       socket.off("playerSaidUno");
@@ -93,10 +93,16 @@ const GameRoom: React.FC = () => {
       socket.off("gameEnded");
       socket.off("playerLeft");
       socket.off("error");
+      socket.off("teamInvitationReceived");
     };
-  }, [socket, user, roomCode, navigate]);
-
-  const handleRoomUpdate = (updatedRoom: Room) => {
+  }, [socket, user, roomCode, navigate]);  const handleRoomUpdate = (updatedRoom: Room) => {
+    console.log('Room updated:', {
+      players: updatedRoom.players.map(p => `${p.name}${p.isBot ? ' (Bot)' : ''}`),
+      host: updatedRoom.host,
+      currentUserId: user?.id,
+      isHost: user?.id === updatedRoom.host,
+      gameStarted: updatedRoom.gameStarted
+    });
     setRoom(updatedRoom);
   };
 
@@ -171,6 +177,98 @@ const GameRoom: React.FC = () => {
     }
     navigate("/dashboard");
   };
+  const handleAddBot = () => {
+    console.log('Adding bot to room:', roomCode);
+    if (!socket || !roomCode) return;
+
+    socket.emit("addBot", roomCode, (response: any) => {
+      console.log('Bot add response:', response);
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Bot Added",
+          description: "A bot player has been added to the room",
+        });
+      }
+    });
+  };
+
+  const handleRemoveBot = (botId: string) => {
+    if (!socket || !roomCode) return;
+
+    socket.emit("removeBot", { roomCode, botId }, (response: any) => {
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Bot Removed",
+          description: "Bot player has been removed from the room",
+        });
+      }
+    });
+  };
+
+  const handleInviteFriend = (friendId: string) => {
+    if (!socket || !roomCode) return;
+
+    socket.emit("sendTeamInvitation", { friendId, roomCode }, (response: any) => {
+      if (response.error) {
+        toast({
+          title: "Invitation Failed",
+          description: response.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Invitation Sent",
+          description: response.message || "Team invitation sent successfully",
+        });
+      }
+    });
+  };
+
+  const handleTeamInvitationReceived = (invitation: any) => {
+    toast({
+      title: "Team Invitation Received",
+      description: `${invitation.from.name} invited you to join their UNO game!`,
+      action: (
+        <div className="flex space-x-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              if (socket) {
+                socket.emit("acceptTeamInvitation", { roomCode: invitation.roomCode }, (response: any) => {
+                  if (response.error) {
+                    toast({
+                      title: "Failed to Join",
+                      description: response.error,
+                      variant: "destructive",
+                    });
+                  } else {
+                    navigate(`/game/${invitation.roomCode}`);
+                  }
+                });
+              }
+            }}
+          >
+            Accept
+          </Button>
+          <Button size="sm" variant="outline">
+            Decline
+          </Button>
+        </div>
+      ),
+    });
+  };
 
   const getCurrentPlayerHand = (): GameCard[] => {
     if (!room || !user) return [];
@@ -195,6 +293,21 @@ const GameRoom: React.FC = () => {
     if (!room || !room.discardPile || room.discardPile.length === 0) return null;
     return room.discardPile[room.discardPile.length - 1];
   };
+
+  // Add debugging helper to window for testing
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.debugUNO = {
+        room,
+        user,
+        socket,
+        isHost: user?.id === room?.host,
+        gameStarted: room?.gameStarted,
+        addBot: handleAddBot,
+        socketConnected: socket?.connected
+      };
+    }
+  }, [room, user, socket]);
 
   if (loading) {
     return (
@@ -258,9 +371,86 @@ const GameRoom: React.FC = () => {
                   )}
                 </div>
               </CardContent>
+            </Card>          </div>
+        </div>        {/* Bot Management and Team Invitations */}
+        {(() => {
+          const shouldShow = !room.gameStarted && user?.id === room.host;
+          console.log('🔍 Room Management Debug:', {
+            gameStarted: room.gameStarted,
+            userId: user?.id,
+            roomHost: room.host,
+            userIdType: typeof user?.id,
+            roomHostType: typeof room.host,
+            isEqual: user?.id === room.host,
+            shouldShow
+          });
+          return shouldShow;
+        })() && (
+          <div className="mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Room Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4">
+                  {/* Bot Management */}
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      onClick={handleAddBot}
+                      disabled={room.players.length >= (room.maxPlayers || 4)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Add Bot Player
+                    </Button>
+                    
+                    {room.players.filter(p => p.isBot).length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {room.players
+                          .filter(p => p.isBot)
+                          .map(bot => (
+                            <Button
+                              key={bot.id}
+                              onClick={() => handleRemoveBot(bot.id)}
+                              size="sm"
+                              variant="destructive"
+                            >
+                              Remove {bot.name}
+                            </Button>
+                          ))
+                        }
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Team Invitation */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">Invite Friends:</span>
+                    <Button
+                      onClick={() => {
+                        // For demo purposes, we'll simulate inviting a friend
+                        // In a real app, you'd have a friend selection modal
+                        const friendId = prompt("Enter friend's user ID to invite:");
+                        if (friendId) {
+                          handleInviteFriend(friendId);
+                        }
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Send Invitation
+                    </Button>
+                  </div>
+                </div>                <div className="mt-4 text-sm text-gray-600">
+                  <p>Room: {room.players.length} / {room.maxPlayers || 4} players</p>
+                  <p>Bots: {room.players.filter(p => p.isBot).length}</p>
+                  <p>Human players: {room.players.filter(p => !p.isBot).length}</p>
+                  <p className="text-xs">Debug - Host: {room.host}, You: {user?.id}, Match: {user?.id === room.host ? 'YES' : 'NO'}</p>
+                </div>
+              </CardContent>
             </Card>
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Game board area */}

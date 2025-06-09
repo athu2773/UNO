@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UNO Bot Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .button { background: #007bff; color: white; padding: 10px 20px; border: none; cursor: pointer; margin: 5px; }
+        .button:hover { background: #0056b3; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin: 10px 0; height: 300px; overflow-y: scroll; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>UNO Bot Functionality Test</h1>
+    
+    <div class="info">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Make sure your UNO backend is running on port 8080</li>
+            <li>Make sure you have a valid JWT token</li>
+            <li>Click "Connect to Server" to establish socket connection</li>
+            <li>Click "Create Test Room" to create a room</li>
+            <li>Click "Add Bot" to add a bot player</li>
+            <li>Check the logs below for results</li>
+        </ol>
+    </div>
+
+    <div>
+        <button class="button" onclick="connectToServer()">Connect to Server</button>
+        <button class="button" onclick="createTestRoom()">Create Test Room</button>
+        <button class="button" onclick="addBot()">Add Bot</button>
+        <button class="button" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div>
+        <h3>Server Logs:</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = null;
+        let currentRoom = null;
+        let testUserId = null;
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function connectToServer() {
+            // You'll need to replace this with a valid JWT token
+            const token = prompt('Enter your JWT token (get it from browser DevTools in your UNO app):');
+            
+            if (!token) {
+                log('❌ No token provided');
+                return;
+            }
+
+            socket = io('http://localhost:8080', {
+                auth: { token: token }
+            });
+
+            socket.on('connect', () => {
+                log('✅ Connected to server');
+                testUserId = socket.id; // This is simplified
+            });
+
+            socket.on('connect_error', (error) => {
+                log(`❌ Connection error: ${error.message}`);
+            });
+
+            socket.on('roomUpdate', (room) => {
+                log(`🎮 Room updated: ${room.players.length} players`);
+                room.players.forEach((player, index) => {
+                    log(`  Player ${index + 1}: ${player.name} ${player.isBot ? '(Bot)' : '(Human)'}`);
+                });
+            });
+        }
+
+        function createTestRoom() {
+            if (!socket) {
+                log('❌ Not connected to server');
+                return;
+            }
+
+            log('📝 Creating test room...');
+            socket.emit('createRoom', (response) => {
+                if (response.error) {
+                    log(`❌ Failed to create room: ${response.error}`);
+                } else {
+                    currentRoom = response.room;
+                    log(`✅ Room created: ${currentRoom.code}`);
+                    log(`👑 Host: ${currentRoom.host}`);
+                    log(`👥 Players: ${currentRoom.players.length}`);
+                }
+            });
+        }
+
+        function addBot() {
+            if (!socket || !currentRoom) {
+                log('❌ No room available');
+                return;
+            }
+
+            log('🤖 Adding bot...');
+            socket.emit('addBot', currentRoom.code, (response) => {
+                if (response.error) {
+                    log(`❌ Failed to add bot: ${response.error}`);
+                } else {
+                    log(`✅ Bot added successfully`);
+                    currentRoom = response.room;
+                    log(`👥 Room now has ${currentRoom.players.length} players`);
+                }
+            });
+        }
+
+        // Initialize
+        log('🚀 UNO Bot Test Page Ready');
+        log('💡 Make sure your backend is running on http://localhost:8080');
+    </script>
+</body>
+</html>

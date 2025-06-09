@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { toast } from '../hooks/use-toast';
+import { useAuth } from './AuthContext';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -24,10 +26,25 @@ interface SocketProviderProps {
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
+    // Clean up existing socket if any
+    if (socket) {
+      socket.close();
+      setSocket(null);
+      setConnected(false);
+    }
+
     const token = localStorage.getItem("token");
-    if (!token) return;
+    
+    // Only create socket if user is authenticated and token exists
+    if (!user || !token) {
+      console.log("No user or token found, skipping socket connection");
+      return;
+    }
+
+    console.log("Creating socket connection for authenticated user:", user.id);
 
     const newSocket = io(
       import.meta.env.VITE_SERVER_URL || "http://localhost:8080",
@@ -60,7 +77,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     return () => {
       newSocket.close();
     };
-  }, []);
+  }, [user]); // Watch for user changes
 
   const value: SocketContextType = {
     socket,

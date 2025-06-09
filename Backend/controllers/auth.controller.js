@@ -29,11 +29,9 @@ exports.googleCallback = async (req, res) => {
       return res.status(401).json({ message: "Authentication failed" });
 
     // Generate JWT token for frontend usage
-    const token = generateToken(user);
-
-    // Redirect to dashboard or send token as JSON (choose approach)
+    const token = generateToken(user); // Redirect to dashboard or send token as JSON (choose approach)
     // Example: send token in query (you might want to set in cookie or header)
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${token}`);
+    res.redirect(`${process.env.CLIENT_URL}/?token=${token}`);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error during login" });
@@ -61,73 +59,80 @@ exports.refreshToken = (req, res) => {
 
 // User registration
 exports.register = async (req, res) => {
-  console.log('[register] Request received:', req.body);
+  console.log("[register] Request received:", req.body);
   try {
     const { username, email, password } = req.body;
-    console.log('[register] Fields:', { username, email, password: password ? '***' : 'missing' });
-    
+    console.log("[register] Fields:", {
+      username,
+      email,
+      password: password ? "***" : "missing",
+    });
+
     if (!username || !email || !password) {
-      console.log('[register] Missing fields error');
+      console.log("[register] Missing fields error");
       return res.status(400).json({ message: "All fields are required" });
     }
     // Check if user exists
     let user = await User.findOne({ $or: [{ email }, { username }] });
     if (user) {
-      console.log('[register] User already exists:', user.email);
+      console.log("[register] User already exists:", user.email);
       return res.status(400).json({ message: "User already exists" });
     }
     // Create user
-    console.log('[register] Creating new user...');
+    console.log("[register] Creating new user...");
     user = new User({ username, email, password });
     await user.save();
-    console.log('[register] User created successfully:', user._id);
-    
+    console.log("[register] User created successfully:", user._id);
+
     // Generate token
     const token = generateToken(user);
-    console.log('[register] Token generated successfully');
+    console.log("[register] Token generated successfully");
     res.status(201).json({ token, user });
   } catch (err) {
-    console.error('[register] Error:', err);
+    console.error("[register] Error:", err);
     res.status(500).json({ message: "Server error during registration" });
   }
 };
 
 // User login
 exports.login = async (req, res) => {
-  console.log('[login] Request received:', req.body);
+  console.log("[login] Request received:", req.body);
   try {
     const { email, password } = req.body;
-    console.log('[login] Fields:', { email, password: password ? '***' : 'missing' });
-    
+    console.log("[login] Fields:", {
+      email,
+      password: password ? "***" : "missing",
+    });
+
     if (!email || !password) {
-      console.log('[login] Missing fields error');
+      console.log("[login] Missing fields error");
       return res
         .status(400)
         .json({ message: "Email and password are required" });
     }
-    
-    console.log('[login] Finding user by email:', email);
+
+    console.log("[login] Finding user by email:", email);
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      console.log('[login] User not found');
+      console.log("[login] User not found");
       return res.status(401).json({ message: "Invalid credentials" });
     }
-    
-    console.log('[login] User found, comparing password...');
+
+    console.log("[login] User found, comparing password...");
     const isMatch = await user.comparePassword(password);
-    console.log('[login] Password match result:', isMatch);
-    
+    console.log("[login] Password match result:", isMatch);
+
     if (!isMatch) {
-      console.log('[login] Password mismatch');
+      console.log("[login] Password mismatch");
       return res.status(401).json({ message: "Invalid credentials" });
     }
-    
-    console.log('[login] Generating token...');
+
+    console.log("[login] Generating token...");
     const token = generateToken(user);
-    console.log('[login] Login successful');
+    console.log("[login] Login successful");
     res.status(200).json({ token, user });
   } catch (err) {
-    console.error('[login] Error:', err);
+    console.error("[login] Error:", err);
     res.status(500).json({ message: "Server error during login" });
   }
 };
