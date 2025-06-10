@@ -1,40 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Input } from './ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../hooks/use-toast';
 import {
-  Trophy,
-  Users,
-  BarChart3,
-  Crown,
-  Bell,
-  Settings,
-  Play,
-  Plus,
-  Search,
-  RefreshCw,
-  Calendar,
-  Star,
-  Award,
-  TrendingUp
+  Trophy, Users, BarChart3, Crown, Bell, Settings, Play,
+  Plus, Search, RefreshCw, Calendar, Star, Award, TrendingUp
 } from 'lucide-react';
-import NotificationSystem from './notifications/NotificationSystem';
 import axios from 'axios';
+
+// UI Components
+import { GradientButton } from './ui/gradient-button';
+import { GradientStatsCard } from './ui/gradient-stats-card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Input } from './ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import NotificationSystem from './notifications/NotificationSystem';
+import { Button } from './ui/button';
 
 interface Room {
   roomCode: string;
   host: string;
-  players: Array<{
-    id: string;
-    name: string;
-    picture?: string;
-  }>;
+  players: Array<{ id: string; name: string; picture?: string }>;
   gameState: string;
   maxPlayers: number;
 }
@@ -60,7 +48,6 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { socket } = useSocket();
   const { user, logout } = useAuth();
-
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -129,13 +116,13 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch notification count:', error);
     }
-  }; const handleCreateRoom = async () => {
-    if (!socket) return;
+  };
 
+  const handleCreateRoom = async () => {
+    if (!socket) return;
     setLoading(true);
     socket.emit('createRoom', (response: any) => {
       setLoading(false);
-      setCreateDialogOpen(false);
       if (response.error) {
         toast({
           title: "Error",
@@ -147,9 +134,9 @@ const Dashboard: React.FC = () => {
       }
     });
   };
+
   const handleJoinRoom = async () => {
     if (!socket || !joinCode.trim()) return;
-
     setLoading(true);
     socket.emit('joinRoom', joinCode.trim().toUpperCase(), (response: any) => {
       setLoading(false);
@@ -167,7 +154,6 @@ const Dashboard: React.FC = () => {
 
   const handleJoinFromList = (roomCode: string) => {
     if (!socket) return;
-
     setLoading(true);
     socket.emit('joinRoom', roomCode, (response: any) => {
       setLoading(false);
@@ -204,7 +190,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header Section */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-5xl font-bold text-white mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -232,59 +218,51 @@ const Dashboard: React.FC = () => {
                 {user?.name?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <Button variant="outline" onClick={handleLogout} className="border-gray-600 text-gray-300 hover:bg-gray-700">
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            >
               <Settings className="w-4 h-4 mr-2" />
               Logout
             </Button>
           </div>
         </div>
 
-        {/* Quick Stats */}
+        {/* Stats Grid with Gradient Cards */}
         {quickStats && (
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
-            <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-blue-400">{quickStats.totalGames}</div>
-                <div className="text-sm text-gray-400">Total Games</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-green-400">{quickStats.wins}</div>
-                <div className="text-sm text-gray-400">Wins</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-yellow-400">{quickStats.winRate.toFixed(1)}%</div>
-                <div className="text-sm text-gray-400">Win Rate</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-purple-400">{quickStats.level}</div>
-                <div className="text-sm text-gray-400">Level</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-orange-400">#{quickStats.rank || 'N/A'}</div>
-                <div className="text-sm text-gray-400">Global Rank</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-pink-400">{quickStats.achievements}</div>
-                <div className="text-sm text-gray-400">Achievements</div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <GradientStatsCard
+              value={quickStats.achievements}
+              label="Achievements"
+              icon={<Award className="w-5 h-5" />}
+              gradient="bg-gradient-to-r from-yellow-400 to-orange-500"
+            />
+            <GradientStatsCard
+              value={`${quickStats.winRate.toFixed(1)}%`}
+              label="Win Rate"
+              icon={<TrendingUp className="w-5 h-5" />}
+              gradient="bg-gradient-to-r from-green-400 to-teal-500"
+            />
+            <GradientStatsCard
+              value={`#${quickStats.rank || 'N/A'}`}
+              label="Global Rank"
+              icon={<Crown className="w-5 h-5" />}
+              gradient="bg-gradient-to-r from-purple-500 to-pink-500"
+            />
+            <GradientStatsCard
+              value={quickStats.level}
+              label="Level"
+              icon={<Star className="w-5 h-5" />}
+              gradient="bg-gradient-to-r from-blue-400 to-cyan-500"
+            />
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Game Actions */}
+          {/* Left Column (2/3 width on large screens) */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Quick Actions */}
+            {/* Quick Actions Card */}
             <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
@@ -298,13 +276,14 @@ const Dashboard: React.FC = () => {
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button
-                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3"
-                      size="lg"
+                    <GradientButton
+                      gradient="bg-gradient-to-r from-green-500 to-emerald-600"
+                      glow={true}
+                      className="h-14 hover:shadow-green-500/40 transition-shadow"
                     >
-                      <Plus className="w-5 h-5 mr-2" />
+                      <Plus className="w-5 h-5" />
                       Create New Room
-                    </Button>
+                    </GradientButton>
                   </DialogTrigger>
                   <DialogContent className="bg-gray-800 border-gray-700">
                     <DialogHeader>
@@ -320,7 +299,7 @@ const Dashboard: React.FC = () => {
                       <Button
                         onClick={handleCreateRoom}
                         disabled={loading}
-                        className="w-full bg-green-600 hover:bg-green-700"
+                        className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
                       >
                         {loading ? 'Creating...' : 'Create Room'}
                       </Button>
@@ -330,14 +309,13 @@ const Dashboard: React.FC = () => {
 
                 <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="border-gray-600 text-gray-300 hover:bg-gray-700 font-semibold py-3"
-                      size="lg"
+                    <GradientButton
+                      gradient="bg-gradient-to-r from-blue-500 to-cyan-600"
+                      className="h-14 hover:shadow-blue-500/40 transition-shadow"
                     >
-                      <Search className="w-5 h-5 mr-2" />
+                      <Search className="w-5 h-5" />
                       Join Room
-                    </Button>
+                    </GradientButton>
                   </DialogTrigger>
                   <DialogContent className="bg-gray-800 border-gray-700">
                     <DialogHeader>
@@ -357,7 +335,7 @@ const Dashboard: React.FC = () => {
                       <Button
                         onClick={handleJoinRoom}
                         disabled={loading || !joinCode.trim()}
-                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                       >
                         {loading ? 'Joining...' : 'Join Room'}
                       </Button>
@@ -367,7 +345,7 @@ const Dashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Feature Navigation */}
+            {/* Explore Features Card */}
             <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white">Explore Features</CardTitle>
@@ -411,7 +389,7 @@ const Dashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Available Rooms */}
+            {/* Available Rooms Card */}
             <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center justify-between">
@@ -444,9 +422,7 @@ const Dashboard: React.FC = () => {
                         className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg border border-gray-600 hover:bg-gray-700 transition-colors"
                       >
                         <div>
-                          <p className="text-white font-semibold">
-                            Room {room.roomCode}
-                          </p>
+                          <p className="text-white font-semibold">Room {room.roomCode}</p>
                           <p className="text-sm text-gray-300">
                             {room.players.length}/{room.maxPlayers} players • {room.gameState}
                           </p>
@@ -455,7 +431,7 @@ const Dashboard: React.FC = () => {
                           size="sm"
                           onClick={() => handleJoinFromList(room.roomCode)}
                           disabled={room.players.length >= room.maxPlayers || loading}
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                         >
                           Join
                         </Button>
@@ -467,9 +443,9 @@ const Dashboard: React.FC = () => {
             </Card>
           </div>
 
-          {/* Sidebar */}
+          {/* Right Column (1/3 width on large screens) */}
           <div className="space-y-6">
-            {/* Recent Activity */}
+            {/* Recent Activity Card */}
             <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
@@ -483,14 +459,20 @@ const Dashboard: React.FC = () => {
                     <div className="text-center py-4">
                       <Star className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                       <p className="text-gray-400 text-sm">No recent activity</p>
-                    </div>) : (
+                    </div>
+                  ) : (
                     recentActivity.map((activity, index) => (
-                      <div key={`activity-${index}-${activity.timestamp}`} className="flex items-start gap-3 p-3 bg-gray-700/30 rounded-lg">
+                      <div
+                        key={index}
+                        className="flex items-start gap-3 p-3 bg-gray-700/30 rounded-lg"
+                      >
                         <div className="text-lg">{activity.icon}</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-sm font-medium">{activity.title}</p>
                           <p className="text-gray-400 text-xs truncate">{activity.description}</p>
-                          <p className="text-gray-500 text-xs mt-1">{formatActivityTime(activity.timestamp)}</p>
+                          <p className="text-gray-500 text-xs mt-1">
+                            {formatActivityTime(activity.timestamp)}
+                          </p>
                         </div>
                       </div>
                     ))
@@ -499,7 +481,7 @@ const Dashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Quick Links */}
+            {/* Quick Links Card */}
             <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white">Quick Links</CardTitle>
