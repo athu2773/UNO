@@ -1,5 +1,6 @@
 import { cn } from "../../lib/utils";
 import { forwardRef } from "react";
+import { Button } from "./button";
 
 interface GradientButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   gradient?: string;
@@ -9,7 +10,7 @@ interface GradientButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
 export const GradientButton = forwardRef<HTMLButtonElement, GradientButtonProps>(
   ({ className, gradient, glow, children, ...props }, ref) => {
     return (
-      <button
+      <Button
         ref={ref}
         className={cn(
           `relative overflow-hidden rounded-md px-6 py-3 font-semibold text-white shadow-lg transition-all 
@@ -30,7 +31,7 @@ export const GradientButton = forwardRef<HTMLButtonElement, GradientButtonProps>
         <span className="relative z-10 flex items-center justify-center gap-2">
           {children}
         </span>
-      </button>
+      </Button>
     );
   }
 );
