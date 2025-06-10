@@ -117,13 +117,20 @@ const GameRoom: React.FC = () => {
     
     setRoom(updatedRoom);
   };
-
   const handleGameStarted = (gameRoom: Room) => {
+    console.log("🎮 Game started event received:", gameRoom);
+    console.log("🎮 Current player cards:", getCurrentPlayerHand());
+    
     setRoom(gameRoom);
     toast({
       title: "Game Started!",
       description: "The UNO game has begun. Good luck!",
     });
+    
+    // Force a re-render to ensure UI updates
+    setTimeout(() => {
+      console.log("🎮 Cards after game start:", getCurrentPlayerHand());
+    }, 100);
   };
 
   const handleGameUpdate = (gameRoom: Room) => {
@@ -165,11 +172,25 @@ const GameRoom: React.FC = () => {
       variant: "destructive",
     });
   };
-
   const handleStartGame = () => {
     if (!socket || !roomCode) return;
 
-    socket.emit("startGame", { roomCode });
+    console.log("🎮 Starting game for room:", roomCode);
+    socket.emit("startGame", { roomCode }, (response: any) => {
+      console.log("🎮 Start game response:", response);
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Game Starting!",
+          description: "The UNO game is beginning...",
+        });
+      }
+    });
   };
 
   const handleObjectUno = (playerId: string) => {
@@ -392,17 +413,7 @@ const GameRoom: React.FC = () => {
           <p>Room Host: {room.host} (type: {typeof room.host})</p>
           <p>Is Host: {user?.id === room.host ? 'Yes' : 'No'}</p>
           <p>Should Show Room Management: {(!room.gameStarted && user?.id === room.host) ? 'Yes' : 'No'}</p>
-        </div>        {/* Debug Info - Temporary */}
-        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
-          <h3 className="font-bold">Debug Info:</h3>
-          <p>Game Started: {room.gameStarted ? 'Yes' : 'No'}</p>
-          <p>User ID: {user?.id} (type: {typeof user?.id})</p>
-          <p>Room Host: {typeof room.host === 'string' ? room.host : JSON.stringify(room.host)} (type: {typeof room.host})</p>
-          <p>Is Host: {user?.id === room.host ? 'Yes' : 'No'}</p>
-          <p>Should Show Room Management: {(!room.gameStarted && user?.id === room.host) ? 'Yes' : 'No'}</p>
-        </div>
-
-        {/* Bot Management and Team Invitations */}
+        </div>        {/* Bot Management and Team Invitations */}
         {!room.gameStarted && user?.id === room.host && (
           <div className="mb-6">
             <Card>
@@ -463,7 +474,6 @@ const GameRoom: React.FC = () => {
                   <p>Room: {room.players.length} / {room.maxPlayers || 4} players</p>
                   <p>Bots: {room.players.filter(p => p.isBot).length}</p>
                   <p>Human players: {room.players.filter(p => !p.isBot).length}</p>
-                  <p className="text-xs">Debug - Host: {room.host}, You: {user?.id}, Match: {user?.id === room.host ? 'YES' : 'NO'}</p>
                 </div>
               </CardContent>
             </Card>

@@ -18,7 +18,6 @@ interface PlayerHandProps {
   currentColor: string;
   isMyTurn: boolean;
   roomCode: string;
-  onCardPlay?: (cardIndex: number, declaredColor?: string) => void;
 }
 
 const PlayerHand: React.FC<PlayerHandProps> = ({
@@ -27,15 +26,12 @@ const PlayerHand: React.FC<PlayerHandProps> = ({
   currentColor,
   isMyTurn,
   roomCode,
-  onCardPlay,
 }) => {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const { socket } = useSocket();
 
   const isCardPlayable = (card: Card) => {
     if (!currentCard) return false;
-
     return (
       card.color === currentColor ||
       card.value === currentCard.value ||
@@ -62,61 +58,85 @@ const PlayerHand: React.FC<PlayerHandProps> = ({
       return;
     }
 
+    setSelectedCard(card);
+
+    // If it's a wild card, wait for color selection
     if (card.color === "black") {
-      // Wild card - need to select color
-      setSelectedCard(card);
-      setSelectedColor(null);
-    } else {
-      // Regular card - play immediately
-      playCard(index);
+      return;
     }
+
+    // Play the card immediately for non-wild cards
+    playCard(card, index);
   };
 
-  const playCard = (cardIndex: number, declaredColor: string | null = null) => {
+  const playCard = (card: Card, _index: number, declaredColor?: string) => {
     if (!socket) return;
 
-    socket.emit("play-card", {
-      roomCode,
-      cardIndex,
-      declaredColor,
+    const cardData = declaredColor ? { ...card, declaredColor } : card;
+    
+    console.log("🃏 Playing card:", cardData, "from room:", roomCode);
+    socket.emit("playCard", roomCode, cardData, (response: any) => {
+      console.log("🃏 Play card response:", response);
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Card played",
+          description: `Played ${card.value} of ${card.color}`,
+        });
+        setSelectedCard(null);
+      }
     });
-
-    setSelectedCard(null);
-    setSelectedColor(null);
-
-    if (onCardPlay) {
-      onCardPlay(cardIndex, declaredColor || undefined);
-    }
   };
 
   const handleColorSelection = (color: string) => {
     if (!selectedCard) return;
 
     const cardIndex = cards.findIndex(c => c.id === selectedCard.id);
-    if (cardIndex !== -1) {
-      playCard(cardIndex, color);
-    }
+    playCard(selectedCard, cardIndex, color);
   };
 
   const handleDrawCard = () => {
     if (!socket || !isMyTurn) return;
 
-    socket.emit("draw-card", { roomCode });
-    
-    toast({
-      title: "Card drawn",
-      description: "You drew a card from the deck",
+    console.log("🃏 Drawing card for room:", roomCode);
+    socket.emit("drawCard", roomCode, (response: any) => {
+      console.log("🃏 Draw card response:", response);
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Card drawn",
+          description: "You drew a card from the deck",
+        });
+      }
     });
   };
 
   const handleSayUno = () => {
     if (!socket) return;
 
-    socket.emit("say-uno", { roomCode });
-    
-    toast({
-      title: "UNO!",
-      description: "You said UNO!",
+    socket.emit("sayUno", roomCode, (response: any) => {
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "UNO!",
+          description: "You said UNO!",
+        });
+      }
     });
   };
 
