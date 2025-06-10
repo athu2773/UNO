@@ -29,7 +29,7 @@ export const GradientStatsCard: React.FC<GradientStatsCardProps> = ({
         {/* Icon with gradient background */}
         <div className="flex justify-center mb-2">
           <div className={`p-2 rounded-full ${gradient} bg-opacity-20`}>
-            {Icon}
+            {icon}
           </div>
         </div>
 
