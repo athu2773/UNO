@@ -53,6 +53,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -120,12 +121,29 @@
   animation: card-flip 0.6s ease-in-out;
 }
 
+/* Smooth gradient transitions */
+.bg-gradient-to-r {
+  background-size: 200% auto;
+  transition: background-position 0.5s ease, box-shadow 0.3s ease;
+}
+
+.bg-gradient-to-r:hover {
+  background-position: right center;
+}
+
+/* Gradient text support */
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .uno-card {
     @apply w-12 h-[4.5rem];
   }
-  
+
   .game-table {
     @apply p-4;
   }
