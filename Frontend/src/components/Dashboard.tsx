@@ -8,12 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../hooks/use-toast';
-import { 
-  Trophy, 
-  Users, 
-  BarChart3, 
-  Crown, 
-  Bell, 
+import {
+  Trophy,
+  Users,
+  BarChart3,
+  Crown,
+  Bell,
   Settings,
   Play,
   Plus,
@@ -60,7 +60,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { socket } = useSocket();
   const { user, logout } = useAuth();
-  
+
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -129,13 +129,13 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch notification count:', error);
     }
-  };
-  const handleCreateRoom = async () => {
+  }; const handleCreateRoom = async () => {
     if (!socket) return;
-    
+
     setLoading(true);
     socket.emit('createRoom', (response: any) => {
       setLoading(false);
+      setCreateDialogOpen(false);
       if (response.error) {
         toast({
           title: "Error",
@@ -149,7 +149,7 @@ const Dashboard: React.FC = () => {
   };
   const handleJoinRoom = async () => {
     if (!socket || !joinCode.trim()) return;
-    
+
     setLoading(true);
     socket.emit('joinRoom', joinCode.trim().toUpperCase(), (response: any) => {
       setLoading(false);
@@ -167,7 +167,7 @@ const Dashboard: React.FC = () => {
 
   const handleJoinFromList = (roomCode: string) => {
     if (!socket) return;
-    
+
     setLoading(true);
     socket.emit('joinRoom', roomCode, (response: any) => {
       setLoading(false);
@@ -298,7 +298,7 @@ const Dashboard: React.FC = () => {
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button 
+                    <Button
                       className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3"
                       size="lg"
                     >
@@ -317,8 +317,8 @@ const Dashboard: React.FC = () => {
                       <p className="text-sm text-gray-400">
                         A room code will be generated automatically. Share it with your friends to let them join!
                       </p>
-                      <Button 
-                        onClick={handleCreateRoom} 
+                      <Button
+                        onClick={handleCreateRoom}
                         disabled={loading}
                         className="w-full bg-green-600 hover:bg-green-700"
                       >
@@ -330,7 +330,7 @@ const Dashboard: React.FC = () => {
 
                 <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button 
+                    <Button
                       variant="outline"
                       className="border-gray-600 text-gray-300 hover:bg-gray-700 font-semibold py-3"
                       size="lg"
@@ -354,8 +354,8 @@ const Dashboard: React.FC = () => {
                         maxLength={6}
                         className="bg-gray-700 border-gray-600 text-white"
                       />
-                      <Button 
-                        onClick={handleJoinRoom} 
+                      <Button
+                        onClick={handleJoinRoom}
                         disabled={loading || !joinCode.trim()}
                         className="w-full bg-blue-600 hover:bg-blue-700"
                       >
@@ -416,9 +416,9 @@ const Dashboard: React.FC = () => {
               <CardHeader>
                 <CardTitle className="text-white flex items-center justify-between">
                   <span>Available Rooms</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={fetchAvailableRooms}
                     className="text-gray-300 hover:bg-gray-700"
                   >
@@ -483,10 +483,9 @@ const Dashboard: React.FC = () => {
                     <div className="text-center py-4">
                       <Star className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                       <p className="text-gray-400 text-sm">No recent activity</p>
-                    </div>
-                  ) : (
+                    </div>) : (
                     recentActivity.map((activity, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 bg-gray-700/30 rounded-lg">
+                      <div key={`activity-${index}-${activity.timestamp}`} className="flex items-start gap-3 p-3 bg-gray-700/30 rounded-lg">
                         <div className="text-lg">{activity.icon}</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-sm font-medium">{activity.title}</p>
@@ -537,9 +536,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Notification System */}
-      <NotificationSystem 
-        isOpen={notificationsOpen} 
-        onClose={() => setNotificationsOpen(false)} 
+      <NotificationSystem
+        isOpen={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
       />
     </div>
   );
