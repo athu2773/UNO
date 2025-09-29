@@ -1,4 +1,3 @@
-// File: middlewares/validation.middleware.js
 const Joi = require("joi");
 
 function validate(schema) {

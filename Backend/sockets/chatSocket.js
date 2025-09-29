@@ -1,10 +1,8 @@
-// File: sockets/chatSocket.js
-
 const chatService = require("../services/chat.service");
 const socketAuth = require("../middlewares/socketAuth.middleware");
 
 function setupChatSockets(io) {
-  io.use(socketAuth); // Authenticate sockets
+  io.use(socketAuth); 
   io.on("connection", (socket) => {
     console.log(
       `User connected to chat: ${socket.user._id}, socketId: ${socket.id}`

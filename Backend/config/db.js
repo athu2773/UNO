@@ -1,4 +1,3 @@
-// File: config/db.js
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
@@ -9,9 +8,9 @@ const connectDB = async () => {
     };
 
     await mongoose.connect(process.env.MONGO_URI, options);
-    console.log("✅ MongoDB Connected");
+    console.log(" MongoDB Connected");
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
+    console.error("MongoDB connection error:", err.message);
     // Try to reconnect after 5 seconds
     setTimeout(connectDB, 5000);
   }

@@ -1,5 +1,3 @@
-// File: sockets/botSocket.js
-
 const botService = require("../services/bot.service");
 
 function setupBotSockets(io) {
@@ -19,11 +17,8 @@ function setupBotSockets(io) {
       }
     });
 
-    // Optional: Handle bot joining room, leaving, etc.
-
     socket.on("disconnect", () => {
       console.log(`Bot socket disconnected: ${socket.id}`);
-      // Cleanup if needed
     });
   });
 }

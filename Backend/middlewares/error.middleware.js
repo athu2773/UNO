@@ -1,5 +1,3 @@
-// File: middlewares/error.middleware.js
-
 function errorHandler(err, req, res, next) {
   console.error(err);
 

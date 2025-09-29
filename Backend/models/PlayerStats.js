@@ -1,4 +1,3 @@
-// Player Statistics model for detailed game analytics
 const mongoose = require("mongoose");
 
 const playerStatsSchema = new mongoose.Schema(

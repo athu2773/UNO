@@ -1,5 +1,3 @@
-// File: services/user.service.js
-
 const User = require("../models/User");
 
 /**

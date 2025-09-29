@@ -1,4 +1,3 @@
-// Friendship model for social features
 const mongoose = require("mongoose");
 
 const friendshipSchema = new mongoose.Schema(

@@ -1,4 +1,3 @@
-// File: controllers/chat.controller.js
 const Message = require("../models/Message");
 
 // Send a chat message

@@ -1,5 +1,3 @@
-// File: sockets/gameSocket.js
-
 const Room = require("../models/Room");
 const User = require("../models/User");
 const { generateDeck, isPlayable, shuffle } = require("../utils/unoLogic");

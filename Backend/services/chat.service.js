@@ -1,4 +1,3 @@
-// File: services/chat.service.js
 const Message = require("../models/Message");
 
 /**

@@ -1,4 +1,3 @@
-// Achievement model for tracking player accomplishments
 const mongoose = require("mongoose");
 
 const achievementSchema = new mongoose.Schema(

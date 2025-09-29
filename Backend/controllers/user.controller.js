@@ -19,7 +19,6 @@ const getProfile = async (req, res) => {
       email: user.email,
       name: user.name,
       friends: user.friends,
-      // add other fields as needed
     });
   } catch (err) {
     console.error("Get profile error:", err);

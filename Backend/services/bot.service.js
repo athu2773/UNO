@@ -1,4 +1,3 @@
-// File: services/bot.service.js
 const { isPlayable, shuffle } = require("../utils/unoLogic");
 const Room = require("../models/Room");
 
@@ -61,8 +60,6 @@ async function addBotsToRoom(roomCode, numberOfBots = 1) {
         if (p.isBot) {
           return p.user.name;
         } else {
-          // For regular users, we can't get the name without populating
-          // So we'll just use a placeholder check
           return null;
         }
       })
@@ -80,7 +77,6 @@ async function addBotsToRoom(roomCode, numberOfBots = 1) {
 
     await room.save();
 
-    // Return the room without population - the caller will handle it
     return await Room.findOne({ code: roomCode });
   } catch (error) {
     throw error;
